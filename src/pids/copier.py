@@ -39,7 +39,11 @@ if IS_WINDOWS:  # pragma: no cover - platform dependent
     import ctypes
     from ctypes import wintypes
 
-    _CopyFileW = ctypes.windll.kernel32.CopyFileW  # type: ignore[attr-defined]
+    # use_last_error is required for ctypes.get_last_error() to hold the real
+    # GetLastError value: without it the errno we report on a failed copy is whatever
+    # unrelated call ran last.
+    _kernel32 = ctypes.WinDLL("kernel32", use_last_error=True)
+    _CopyFileW = _kernel32.CopyFileW
     _CopyFileW.argtypes = (wintypes.LPCWSTR, wintypes.LPCWSTR, wintypes.BOOL)
     _CopyFileW.restype = wintypes.BOOL
 
@@ -107,7 +111,7 @@ def copy_file(fh: BinaryIO, src_path: str, dest_path: str, size: int) -> int:
             # CopyFileW is path-based, but the source header is in the page cache, so
             # this is still a single physical read of the file.
             if not _CopyFileW(long_path(src_path), tmp_os, False):
-                raise ctypes.WinError(ctypes.get_last_error())  # type: ignore[name-defined]
+                raise ctypes.WinError(ctypes.get_last_error())
             written = os.stat(tmp_os).st_size
         else:
             out_fd = os.open(tmp_os, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o666)

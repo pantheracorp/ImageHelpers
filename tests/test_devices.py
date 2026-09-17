@@ -74,3 +74,32 @@ def test_network_fstypes_are_classified_as_network(monkeypatch, tmp_path):
     monkeypatch.setattr(devices, "mount_fstype", lambda _p: "smbfs")
     probe = devices.probe(str(tmp_path))
     assert probe.device_class == devices.NETWORK
+
+
+def test_mapped_network_drive_is_detected_as_a_share(monkeypatch):
+    """Sec 8.5: a mapped drive looks local to every string test."""
+    monkeypatch.setattr(devices, "windows_drive_type", lambda _p: devices._DRIVE_REMOTE)
+    assert devices.is_network_drive("Z:\\photos")
+
+
+def test_fixed_drive_is_not_a_share(monkeypatch):
+    monkeypatch.setattr(devices, "windows_drive_type", lambda _p: devices._DRIVE_FIXED)
+    assert not devices.is_network_drive("C:\\photos")
+
+
+def test_unc_is_a_share_without_touching_the_win32_api():
+    assert devices.is_network_drive("\\\\nas\\photos")
+    assert devices.is_network_drive("//nas/photos")
+
+
+def test_windows_drive_type_is_none_off_windows():
+    if sys.platform != "win32":
+        assert devices.windows_drive_type("C:\\x") is None
+
+
+def test_state_on_a_mapped_drive_is_rejected(monkeypatch, tmp_path):
+    """The CLI guard must fire for Z:\\ as well as \\\\server\\share."""
+    from pids import paths as paths_mod
+
+    monkeypatch.setattr(devices, "windows_drive_type", lambda _p: devices._DRIVE_REMOTE)
+    assert paths_mod.is_network_path("Z:\\state\\pids.sqlite")

@@ -104,10 +104,10 @@ def dest_key(path: str | os.PathLike[str]) -> str:
 def is_network_path(p: str | os.PathLike[str]) -> bool:
     """True for UNC paths and for mount points whose filesystem is a network one."""
     s = os.fspath(p)
-    if s.startswith("\\\\") or s.startswith("//"):
-        return True
-    from pids.devices import mount_fstype  # local import: avoids a cycle
+    from pids.devices import is_network_drive, mount_fstype  # local import: avoids a cycle
 
+    if is_network_drive(s):
+        return True
     fstype = mount_fstype(s)
     if not fstype:
         return False

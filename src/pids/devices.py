@@ -156,19 +156,45 @@ def _probe_macos(path: str) -> Probe | None:
     return None
 
 
-def _probe_windows(path: str) -> Probe | None:  # pragma: no cover - platform dependent
-    if path.startswith("\\\\") or path.startswith("//"):
-        return Probe(NETWORK, WORKERS[NETWORK], "UNC path")
+#: GetDriveTypeW return values we care about.
+_DRIVE_REMOVABLE = 2
+_DRIVE_FIXED = 3
+_DRIVE_REMOTE = 4
+
+
+def windows_drive_type(path: str) -> int | None:  # pragma: no cover - platform dependent
+    """``GetDriveTypeW`` for the volume holding ``path``, or None off Windows."""
+    if sys.platform != "win32":
+        return None
     try:
         import ctypes
+        from ctypes import wintypes
 
+        get_drive_type = ctypes.WinDLL("kernel32", use_last_error=True).GetDriveTypeW
+        get_drive_type.argtypes = (wintypes.LPCWSTR,)
+        get_drive_type.restype = wintypes.UINT
         drive = os.path.splitdrive(os.path.abspath(path))[0]
-        if drive:
-            drive_type = ctypes.windll.kernel32.GetDriveTypeW(drive + "\\")
-            if drive_type == 4:  # DRIVE_REMOTE
-                return Probe(NETWORK, WORKERS[NETWORK], "mapped network drive")
+        if not drive:
+            return None
+        return int(get_drive_type(drive + "\\"))
     except Exception:
-        pass
+        return None
+
+
+def is_network_drive(path: str) -> bool:
+    """True for a UNC path or a mapped network drive letter.
+
+    A mapped drive (``Z:\\``) looks local to every string test, so this is what stops
+    the state DB being placed on SMB by accident (sec 8.5).
+    """
+    if path.startswith("\\\\") or path.startswith("//"):
+        return True
+    return windows_drive_type(path) == _DRIVE_REMOTE
+
+
+def _probe_windows(path: str) -> Probe | None:  # pragma: no cover - platform dependent
+    if is_network_drive(path):
+        return Probe(NETWORK, WORKERS[NETWORK], "UNC path or mapped network drive")
     # MediaType via PowerShell is slow and often reports "Unspecified" for USB
     # enclosures, so a wrong guess would be worse than admitting we do not know.
     return None

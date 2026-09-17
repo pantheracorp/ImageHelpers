@@ -191,8 +191,15 @@ class SqliteStore:
 
     def _connect(self, readonly: bool = False) -> sqlite3.Connection:
         if readonly:
-            uri = "file:" + self.path.replace("?", "%3f").replace("#", "%23") + "?mode=ro"
-            conn = sqlite3.connect(uri, uri=True, timeout=30.0)
+            # SQLite URI filenames use forward slashes on every platform, and '?'/'#'
+            # have to be percent-escaped or they are read as the query fragment.
+            escaped = (
+                os.path.abspath(self.path)
+                .replace("\\", "/")
+                .replace("?", "%3f")
+                .replace("#", "%23")
+            )
+            conn = sqlite3.connect("file:" + escaped + "?mode=ro", uri=True, timeout=30.0)
         else:
             conn = sqlite3.connect(self.path, timeout=30.0, isolation_level=None)
         # WAL gives concurrent readers alongside the single writer; NORMAL is durable

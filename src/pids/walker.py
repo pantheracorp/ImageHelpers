@@ -62,13 +62,15 @@ def iter_images(
             try:
                 with os.scandir(long_path(current)) as entries:
                     for entry in entries:
+                        # Always plain paths from here on: see strip_long_prefix().
+                        path = strip_long_prefix(entry.path)
                         try:
                             if entry.is_dir(follow_symlinks=follow_symlinks):
                                 if _should_skip_dir(entry.name):
                                     continue
-                                if any(is_within(entry.path, ex) for ex in excluded):
+                                if any(is_within(path, ex) for ex in excluded):
                                     continue
-                                stack.append(entry.path)
+                                stack.append(path)
                                 continue
                             if not entry.is_file(follow_symlinks=follow_symlinks):
                                 continue
@@ -79,13 +81,13 @@ def iter_images(
                             stats.images += 1
                             stats.image_bytes += info.st_size
                             yield FileItem(
-                                path=entry.path,
+                                path=path,
                                 size=info.st_size,
                                 mtime=info.st_mtime,
                                 root=root,
                             )
                         except OSError:
-                            stats.unreadable_files.append(entry.path)
+                            stats.unreadable_files.append(path)
             except OSError:
                 stats.unreadable_dirs.append(current)
 
@@ -114,8 +116,9 @@ def iter_dirs(roots: Sequence[str], exclude: Iterable[str] = ()) -> Iterator[tup
                             continue
                         if _should_skip_dir(entry.name):
                             continue
-                        if any(is_within(entry.path, ex) for ex in excluded):
+                        path = strip_long_prefix(entry.path)
+                        if any(is_within(path, ex) for ex in excluded):
                             continue
-                        stack.append(entry.path)
+                        stack.append(path)
             except OSError:
                 continue

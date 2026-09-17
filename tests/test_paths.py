@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import os
-from pathlib import PurePath
+from pathlib import PurePath, PureWindowsPath
+
+import pytest
 
 from pids import paths
 
@@ -54,3 +56,52 @@ def test_safe_component_never_returns_empty():
 def test_long_path_is_a_noop_off_windows():
     if not paths.IS_WINDOWS:
         assert paths.long_path("/tmp/x") == "/tmp/x"
+
+
+# -- Windows path handling (sec 6). These run everywhere: the transforms are pure
+# -- string logic, so the Windows behaviour is pinned without a Windows machine.
+
+
+def test_strip_long_prefix_reverses_long_path():
+    assert paths.strip_long_prefix("\\\\?\\C:\\src\\CAM101\\IMG_1.JPG") == "C:\\src\\CAM101\\IMG_1.JPG"
+    assert paths.strip_long_prefix("\\\\?\\UNC\\nas\\share\\x.jpg") == "\\\\nas\\share\\x.jpg"
+    assert paths.strip_long_prefix("/plain/path") == "/plain/path"
+
+
+def test_strip_long_prefix_keeps_paths_relative_to_the_source_root():
+    """A prefixed path does not match the un-prefixed root, which would break sec 6.
+
+    Shown with PureWindowsPath so the failure mode is reproduced off Windows: the
+    prefixed form cannot be made relative, the stripped form can.
+    """
+    root = PureWindowsPath("C:/src")
+    prefixed = PureWindowsPath("\\\\?\\C:\\src\\NorthRange\\CAM101\\100EK113\\IMG_1.JPG")
+    with pytest.raises(ValueError):
+        prefixed.relative_to(root)
+    stripped = PureWindowsPath(paths.strip_long_prefix(str(prefixed)))
+    assert stripped.relative_to(root).parts == (
+        "NorthRange",
+        "CAM101",
+        "100EK113",
+        "IMG_1.JPG",
+    )
+
+
+def test_long_path_round_trips_for_unc_and_drive_paths():
+    if not paths.IS_WINDOWS:
+        pytest.skip("long_path is a no-op off Windows")
+    for original in ("C:\\src\\a.jpg", "\\\\nas\\share\\a.jpg"):
+        assert paths.strip_long_prefix(paths.long_path(original)) == original
+
+
+def test_walker_yields_plain_paths(tmp_path):
+    """The walk must never emit a `\\\\?\\` path, whatever it handed to scandir."""
+    from pids import walker
+
+    src = tmp_path / "CAM101"
+    src.mkdir()
+    (src / "IMG_1.JPG").write_bytes(b"\xff\xd8\xff\xd9")
+    items = list(walker.iter_images([str(tmp_path)]))
+    assert len(items) == 1
+    assert "?" not in items[0].path
+    assert items[0].path.startswith(str(tmp_path))
