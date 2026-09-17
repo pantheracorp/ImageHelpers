@@ -246,3 +246,7 @@ uv run pyinstaller packaging/pids.spec
 The result is unsigned, so SmartScreen and corporate AV will often flag it. `uv tool
 install` is the recommended path wherever you can install software; the `.exe` is for
 locked-down machines only.
+
+## License
+
+MIT — see [LICENSE](LICENSE).

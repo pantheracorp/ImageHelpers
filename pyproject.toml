@@ -3,6 +3,8 @@ name = "pids"
 version = "0.1.0"
 description = "PantheraIDS camera-trap image restructuring tool (Check/<CAxxx>/<MMDDYY>/)"
 readme = "README.md"
+license = "MIT"
+license-files = ["LICENSE"]
 requires-python = ">=3.12"
 dependencies = ["click>=8.1"]
 classifiers = [
