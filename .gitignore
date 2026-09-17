@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# Environments
+.venv/
+.venv_*/
+venv*/
+env/
+
+# Build / packaging output
+build/
+dist/
+*.spec.bak
+
+# pids tool output: state DBs, journals, logs and operator CSVs are run artifacts,
+# not source. The SQLite -wal/-shm siblings appear while a run is in progress.
+state/
+reports/
+pids.log
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+*.jsonl
+*.jsonl.runs
+
+# Synthetic test trees from tools/make_tree.py
+testtree/
+/tmp_tree/
+
+# Editors / OS
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db

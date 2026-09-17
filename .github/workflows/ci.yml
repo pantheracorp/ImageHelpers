@@ -1,0 +1,54 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    # Windows is the production platform and macOS is the development one, so both
+    # are gated.  The path handling (drive letters, case-insensitive collision keys,
+    # \\?\ long paths) is exactly the kind of thing that only breaks on one of them.
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Install project
+        run: uv sync --extra dev
+
+      - name: Tests
+        run: uv run pytest -q
+
+      - name: Smoke test the installed entry point
+        run: uv run pids --version
+
+  install-check:
+    # Proves `uv tool install` works from a clean checkout on Windows -- the exact
+    # command in the README.  Catches packaging breakage (a missing README, a bad
+    # requires-python, an entry point that does not import) that the test job misses
+    # because it runs from the source tree.
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: uv tool install from the checkout
+        run: uv tool install .
+
+      - name: Run the installed command
+        run: |
+          uv tool run --from . pids --version
+          uv tool run --from . pids --help
