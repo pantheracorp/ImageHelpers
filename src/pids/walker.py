@@ -11,7 +11,7 @@ import os
 from dataclasses import dataclass, field
 from typing import Iterable, Iterator, Sequence
 
-from pids.paths import SKIP_DIRS, is_jpeg_name, is_within, long_path
+from pids.paths import SKIP_DIRS, is_jpeg_name, is_within, long_path, strip_long_prefix
 
 
 @dataclass

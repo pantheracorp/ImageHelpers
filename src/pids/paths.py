@@ -61,6 +61,23 @@ def long_path(p: str | os.PathLike[str]) -> str:
     return "\\\\?\\" + s
 
 
+def strip_long_prefix(p: str) -> str:
+    r"""Remove a ``\\?\`` prefix, returning an ordinary path.
+
+    ``long_path()`` is applied only at syscall boundaries, so nothing else in the tool
+    ever stores a prefixed path.  ``os.scandir`` is the exception: hand it a prefixed
+    directory and every ``DirEntry.path`` it returns carries the prefix forward, which
+    would end up in the manifest, in the reports, and -- worse -- would stop
+    ``relative_to(source_root)`` matching, so camera resolution would silently fail on
+    exactly the deep trees the prefix exists to support.
+    """
+    if p.startswith("\\\\?\\UNC\\"):
+        return "\\\\" + p[8:]
+    if p.startswith("\\\\?\\"):
+        return p[4:]
+    return p
+
+
 def safe_component(name: str) -> str:
     """Normalise a single path component for use in an output path.
 

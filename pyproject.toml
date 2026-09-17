@@ -13,6 +13,10 @@ classifiers = [
   "Private :: Do Not Upload",
 ]
 
+[project.urls]
+Homepage = "https://github.com/pantheracorp/ImageHelpers"
+Source = "https://github.com/pantheracorp/ImageHelpers"
+
 [project.scripts]
 pids = "pids.cli:main"
 

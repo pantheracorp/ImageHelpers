@@ -35,7 +35,7 @@ If policy blocks the install script, download `uv.exe` from
 **2. Install `pids`:**
 
 ```powershell
-uv tool install git+https://github.com/panthera/ImageHelpers
+uv tool install git+https://github.com/pantheracorp/ImageHelpers
 ```
 
 **3. Open a new terminal.** PATH changes do not apply to a shell that is already
@@ -57,7 +57,7 @@ Identical, with a different first line:
 
 ```bash
 curl -LsSf https://astral.sh/uv/install.sh | sh
-uv tool install git+https://github.com/panthera/ImageHelpers
+uv tool install git+https://github.com/pantheracorp/ImageHelpers
 ```
 
 ### Keeping it up to date
@@ -65,7 +65,7 @@ uv tool install git+https://github.com/panthera/ImageHelpers
 | Task | Command |
 |---|---|
 | Upgrade | `uv tool upgrade pids` |
-| Force reinstall from git | `uv tool install --force git+https://github.com/panthera/ImageHelpers` |
+| Force reinstall from git | `uv tool install --force git+https://github.com/pantheracorp/ImageHelpers` |
 | List installed tools | `uv tool list` |
 | Uninstall | `uv tool uninstall pids` |
 | Command not found after install | `uv tool update-shell`, then open a new terminal |
@@ -73,7 +73,7 @@ uv tool install git+https://github.com/panthera/ImageHelpers
 ### Run once without installing
 
 ```powershell
-uvx --from git+https://github.com/panthera/ImageHelpers pids --help
+uvx --from git+https://github.com/pantheracorp/ImageHelpers pids --help
 ```
 
 ---
@@ -218,7 +218,7 @@ extra folder level is not really a site.
 ## Development
 
 ```bash
-git clone https://github.com/panthera/ImageHelpers
+git clone https://github.com/pantheracorp/ImageHelpers
 cd ImageHelpers
 uv sync --extra dev     # creates .venv, fetches Python 3.12
 uv run pytest           # unit tests
