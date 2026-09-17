@@ -136,6 +136,25 @@ def test_reports_stream_without_loading_the_table(tmp_path, monkeypatch):
     assert written["restructuring_log.csv"] == 500
 
 
+def test_scan_reports_are_a_real_preview(tree, tmp_path):
+    """Before any copy there are no `ok` rows, so the preview comes from `planned`."""
+    state = str(tmp_path / "s.sqlite")
+    options = Options(
+        sources=(str(tree),), state=state, plan_only=True, workers=2, progress=False
+    )
+    run_pipeline(options, cmd="scan")
+    out = tmp_path / "preview"
+    with db.open_store(state, "sqlite") as store:
+        written = report.write_reports(store, str(out))
+    assert written["restructuring_log.csv"] == 4, "the planned mapping must be previewable"
+    assert written["qc_summary.csv"] == 4
+    rows = read_csv(str(out / "qc_summary.csv"))
+    assert {r["camera_id"] for r in rows} == {"CA101", "CA102", "CA105"}
+    checks = {r["check"]: r for r in read_csv(str(out / "qc_checks.csv"))}
+    assert checks["planned_not_yet_copied"]["value"] == "4"
+    assert checks["camera_date_folders"]["value"] == "4"
+
+
 def test_format_checks_is_human_readable(tmp_path):
     with db.open_store(str(tmp_path / "s.sqlite"), "sqlite") as store:
         text = report.format_checks(report.qc_checks(store))

@@ -440,7 +440,8 @@ nothing else. The same is true of cx_Freeze, py2exe and Nuitka. A Windows `.exe`
 built on Windows.
 
 Build it in **CI on a `windows-latest` GitHub Actions runner**, triggered on tag, with
-the binary attached to the release. That needs no Windows machine and doesn't depend on
+the binary attached to the release — implemented in `.github/workflows/release.yml`,
+using `packaging/pids.spec` and `packaging/entry.py`. That needs no Windows machine and doesn't depend on
 the state of whoever's laptop did the build. Building on one of the field Windows PCs
 works for a one-off but isn't reproducible. A Windows VM on Apple Silicon has a specific
 trap: ARM Windows produces an **ARM64** binary by default, which will not run on x64
@@ -496,7 +497,7 @@ Two operational caveats that argue for `uv` as the default:
 | 6   | Single writer thread, `--resume`/`--retry-failed`, crash injection (`kill -9` mid-run)    | Resume is exact and idempotent; collision arbitration holds under concurrency |
 | 7   | `verify` + `report`                                                                       | Sampled integrity; QC parity with the R script's output                       |
 | 8   | Real trial: `--limit 5000` on one camera, then one full drive                             | Real-world throughput and edge cases                                          |
-| 9   | Packaging: `uv tool install`, plus GitHub Actions `windows-latest` exe build (§10.1)      | Field-staff install on both platforms; exe built on Windows, never cross-compiled |
+| 9   | **Done** — `uv tool install`, `README.md` runbook, `ci.yml`, `release.yml` exe build (§10.1) | Field-staff install on both platforms; exe built on Windows, never cross-compiled |
 
 
 We will trial on a windows using the frozen uv+ exe

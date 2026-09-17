@@ -18,7 +18,7 @@ import sys
 import click
 
 from pids import __version__, calibrate as calibrate_mod, db, report as report_mod, verify as verify_mod
-from pids.paths import is_network_path, normalise_root
+from pids.paths import is_network_path
 from pids.pipeline import (
     COLLISION_POLICIES,
     KEEP_FIRST,
@@ -29,7 +29,7 @@ from pids.pipeline import (
     run_pipeline,
     survey_cameras,
 )
-from pids.progress import human_bytes, human_time, log, setup_logging
+from pids.progress import human_bytes, human_time, setup_logging
 
 DEFAULT_STATE = os.path.join("state", "pids.sqlite")
 
@@ -82,7 +82,7 @@ def _print_summary(summary: Summary, plan_only: bool) -> None:
     else:
         click.echo(f"  {label.lower():<13} {summary.copied:,}  ({human_bytes(summary.copied_bytes)})")
     if summary.skipped:
-        click.echo(f"  skipped       {summary.skipped:,}  (already ok, --resume)")
+        click.echo(f"  skipped       {summary.skipped:,}  (already decided, --resume)")
     click.echo(f"  quarantined   {summary.quarantined:,}  -> Unsorted/")
     click.echo(f"  conflicts     {summary.conflicts:,}")
     if summary.duplicates:

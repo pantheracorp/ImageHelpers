@@ -46,9 +46,21 @@ jobs:
         uses: astral-sh/setup-uv@v5
 
       - name: uv tool install from the checkout
-        run: uv tool install .
+        run: uv tool install --force .
+
+      - name: Put the tool shim directory on PATH
+        # A fresh `uv tool install` writes its shims to a directory that is not on PATH
+        # in the current shell -- the same "command not found until you open a new
+        # terminal" step operators hit, and the reason it is called out in the README.
+        shell: pwsh
+        run: |
+          $bin = (uv tool dir --bin).Trim()
+          Write-Host "shim dir: $bin"
+          Add-Content -Path $env:GITHUB_PATH -Value $bin
 
       - name: Run the installed command
+        shell: pwsh
         run: |
-          uv tool run --from . pids --version
-          uv tool run --from . pids --help
+          pids --version
+          pids --help
+          pids cameras --help

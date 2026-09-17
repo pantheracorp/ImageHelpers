@@ -44,6 +44,12 @@ from pids.walker import FileItem, WalkStats, iter_dirs, iter_images
 CHECK_DIR = "Check"
 UNSORTED_DIR = "Unsorted"
 
+#: Stands in for the destination root when ``scan`` is run without ``--dest``.  The
+#: planned paths below it are still exactly right relative to the output root, so the
+#: camera x date summary and the collision count are accurate; only the prefix is
+#: unknown, and it says so rather than quietly using the current directory.
+DEST_PLACEHOLDER = "<DEST>"
+
 KEEP_FIRST = "keep-first"
 HASH_DEDUPE = "hash-dedupe"
 SUFFIX = "suffix"
@@ -291,6 +297,9 @@ class Pipeline:
         self.walk_stats = WalkStats()
         self._made_dirs: set[str] = set()
         self._mkdir_lock = threading.Lock()
+        self.dest_root = (
+            str(normalise_root(options.dest)) if options.dest else DEST_PLACEHOLDER
+        )
         self.progress: Progress | None = None
 
     # -- public entry point ------------------------------------------------------
@@ -469,7 +478,7 @@ class Pipeline:
             record.date = date
 
             dest_dir = os.path.join(
-                str(normalise_root(self.options.dest or ".")),
+                self.dest_root,
                 CHECK_DIR,
                 safe_component(record.cam or ""),
                 safe_component(record.date),
@@ -660,9 +669,14 @@ class Pipeline:
         """
         record.reason = reason
         record.date = None
+        unsorted_dir = os.path.join(
+            self.dest_root, UNSORTED_DIR, *[safe_component(part) for part in dir_parts]
+        )
         if self.options.plan_only or not self.options.dest:
             record.status = db.QUARANTINED
-            record.dest = None
+            # Recorded, not claimed: nothing is copied during a plan, but the preview
+            # still shows where this file would land.
+            record.dest = os.path.join(unsorted_dir, safe_component(filename))
             record.dest_key = None
             self.store.write(record)
             with self.summary.lock:
@@ -670,16 +684,11 @@ class Pipeline:
             if self.progress:
                 self.progress.update(files=1, quarantined=1)
             return
-        dest_dir = os.path.join(
-            str(normalise_root(self.options.dest)),
-            UNSORTED_DIR,
-            *[safe_component(part) for part in dir_parts],
-        )
         record.status = db.QUARANTINED
         self._place(
             record,
             item,
-            dest_dir,
+            unsorted_dir,
             safe_component(filename),
             handle,
             policy=SUFFIX,

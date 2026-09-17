@@ -81,11 +81,22 @@ def _mount_table() -> list[tuple[str, str]]:
     return entries
 
 
+def _mount_point(path: str) -> str:
+    """The mount point holding ``path``.
+
+    ``diskutil info`` only accepts a mount point or a device node, so a plain
+    directory like ``/private/tmp/dest`` has to be resolved upward first -- otherwise
+    detection fails and every destination looks 'unknown'.
+    """
+    target = os.path.realpath(_existing(path))
+    while not os.path.ismount(target) and target != os.path.dirname(target):
+        target = os.path.dirname(target)
+    return target
+
+
 def mount_fstype(path: str) -> str | None:
     """Filesystem type of the volume holding ``path``, where the OS exposes it."""
-    target = os.path.abspath(path)
-    while not os.path.exists(target) and target != os.path.dirname(target):
-        target = os.path.dirname(target)
+    target = os.path.realpath(_existing(path))
     for mountpoint, fstype in _mount_table():
         if target == mountpoint or target.startswith(mountpoint.rstrip("/") + "/"):
             return fstype
@@ -125,7 +136,7 @@ def _probe_macos(path: str) -> Probe | None:
         return Probe(NETWORK, WORKERS[NETWORK], f"fstype {fstype}")
     try:
         result = subprocess.run(
-            ["/usr/sbin/diskutil", "info", "-plist", path],
+            ["/usr/sbin/diskutil", "info", "-plist", _mount_point(path)],
             capture_output=True,
             timeout=15,
         )
